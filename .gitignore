@@ -1,2 +1,8 @@
 #properties file
 *.properties
+
+#WorkSpace
+.idea
+
+#Target
+target
