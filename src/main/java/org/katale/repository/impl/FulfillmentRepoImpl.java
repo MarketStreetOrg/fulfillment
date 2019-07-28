@@ -60,4 +60,11 @@ public class FulfillmentRepoImpl implements FulfillmentRepo {
     public Boolean exists(Fulfillment fulfillment) {
         return entityManager.find(Fulfillment.class,fulfillment.getId()) != null;
     }
+
+    @Override
+    public Fulfillment getByOrder(long id) {
+        return (Fulfillment) entityManager.createQuery("select f from Fulfillment f where f.orderId=:id")
+                .setParameter("id",id)
+                .getResultList().get(0);
+    }
 }

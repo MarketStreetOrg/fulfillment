@@ -1,5 +1,7 @@
 package org.katale.domains;
 
+import java.util.Calendar;
+
 public class Product
     {
         public int ID;
@@ -21,8 +23,6 @@ public class Product
 
             public Builder SetDescription(String Description)
             {
-                product.Description = Description;
-
                 return this;
             }
 

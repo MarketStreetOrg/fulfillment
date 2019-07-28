@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.katale.BaseTest;
 import org.katale.domains.Fulfillment;
 import org.katale.service.FulfillmentService;
 import org.katale.utilities.Status;

@@ -39,4 +39,7 @@ public class FulfillmentServiceImpl implements FulfillmentService {
     public boolean exists(Fulfillment fulfillment) {
         return fulfillmentRepo.exists(fulfillment);
     }
+
+    @Override
+    public Fulfillment getByOrder(long id) { return fulfillmentRepo.getByOrder(id); }
 }
