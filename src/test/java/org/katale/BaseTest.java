@@ -1,4 +1,4 @@
-package org.katale.service.impl;
+package org.katale;
 
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
