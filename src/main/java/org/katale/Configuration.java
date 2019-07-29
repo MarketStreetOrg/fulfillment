@@ -2,17 +2,27 @@ package org.katale;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.katale.integration.amqp.RabbitMQConsumer;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jms.DefaultJmsListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.amqp.inbound.AmqpInboundChannelAdapter;
+import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.channel.QueueChannel;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.PollableChannel;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -147,7 +157,7 @@ public class Configuration {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.setQueueNames("ordersQueue");
-        container.setMessageListener(listenerAdapter);
+     //   container.setMessageListener(listenerAdapter);
         return container;
     }
 
@@ -161,4 +171,36 @@ public class Configuration {
 //    }
 
 
+    //EAI (BUS ARCHITECTURE)
+    @Bean
+    MessageChannel amqpInputChannel(){
+        return new DirectChannel();
+    }
+
+    @Bean
+    MessageChannel amqpOutputChannel(){
+        return new QueueChannel();
+    }
+
+    @Bean
+    public AmqpInboundChannelAdapter inboundChannelAdapter(SimpleMessageListenerContainer listenerContainer,
+                                                           @Qualifier("amqpInputChannel") MessageChannel channel){
+        AmqpInboundChannelAdapter amqpInboundChannelAdapter=new AmqpInboundChannelAdapter(listenerContainer);
+        amqpInboundChannelAdapter.setOutputChannel(channel);
+        return amqpInboundChannelAdapter;
+    }
+
+
+    /**
+     * Channels defined here
+     */
+    @Bean
+    MessageChannel pickUp(){
+        return new QueueChannel();
+    }
+
+    @Bean
+    MessageChannel delivery(){
+        return new QueueChannel();
+    }
 }
