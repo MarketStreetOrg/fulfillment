@@ -9,23 +9,24 @@ import java.util.List;
 
 @RestController
 @RequestMapping(value = "/fulfillment")
+@CrossOrigin(origins = "http://localhost:8080")
 public class FulfillmentController {
 
     @Autowired
     FulfillmentService fulfillmentService;
 
     @GetMapping(value = "/all")
-    public List<Fulfillment> getAll(){
+    public @ResponseBody List<Fulfillment> getAll(){
         return fulfillmentService.findAll();
     }
 
     @GetMapping(value = "/{id}")
-    public Fulfillment getOne(@PathVariable long id){
+    public @ResponseBody Fulfillment getOne(@PathVariable long id){
         return fulfillmentService.findOne(id);
     }
 
     @GetMapping(value = "/order")
-    public Fulfillment getById(@RequestParam long id){
+    public @ResponseBody Fulfillment getByOrder(@RequestParam long id){
         return fulfillmentService.getByOrder(id);
     }
 

@@ -16,6 +16,6 @@ public class RabbitMQProducerTest {
 
     @Test
     public void sendMessage() {
-        producer.sendMessage("This is a long message");
+        producer.sendMessage("8374232");
     }
 }

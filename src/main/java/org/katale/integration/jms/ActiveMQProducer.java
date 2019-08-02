@@ -17,9 +17,7 @@ public class ActiveMQProducer {
     @Autowired
     private JmsTemplate template;
 
-    public ActiveMQProducer(){
-
-    }
+    public ActiveMQProducer(){ }
 
     public void sendMessage(final String message){
         this.template.send("fulfillment.orders",new MessageCreator() {

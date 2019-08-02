@@ -2,19 +2,18 @@ package org.katale;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.katale.integration.amqp.RabbitMQConsumer;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jms.DefaultJmsListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.integration.amqp.inbound.AmqpInboundChannelAdapter;
+import org.springframework.integration.amqp.inbound.AmqpInboundGateway;
+import org.springframework.integration.amqp.outbound.AmqpOutboundEndpoint;
+import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -22,7 +21,6 @@ import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.PollableChannel;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -54,7 +52,6 @@ public class Configuration {
     @Value(value = "${hibernate.format_sql}")
     private String formatSQL;
 
-
     @Value(value = "${jdbc.url}")
     private String mySQLURL;
 
@@ -66,22 +63,21 @@ public class Configuration {
 
 
     @Bean
-    public ActiveMQConnectionFactory activeMQConnectionFactory(){
-        ActiveMQConnectionFactory connectionFactory=new ActiveMQConnectionFactory();
+    public ActiveMQConnectionFactory activeMQConnectionFactory() {
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
         connectionFactory.setBrokerURL(activeMQURL);
         connectionFactory.setUserName(activeMQusername);
         connectionFactory.setPassword(activeMQPassword);
-
         return connectionFactory;
     }
 
     @Bean
-    public DataSource dataSource(){
+    public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setUrl(mySQLURL);
-        dataSource.setUsername( mySQLusername );
-        dataSource.setPassword( mySQLPassword);
+        dataSource.setUsername(mySQLusername);
+        dataSource.setPassword(mySQLPassword);
         return dataSource;
     }
 
@@ -90,7 +86,7 @@ public class Configuration {
         LocalContainerEntityManagerFactoryBean em
                 = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource());
-        em.setPackagesToScan(new String[] { "org.katale.domains" });
+        em.setPackagesToScan(new String[]{"org.katale.domains"});
         JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);
         em.setJpaProperties(additionalProperties());
@@ -100,18 +96,17 @@ public class Configuration {
 
     Properties additionalProperties() {
         Properties properties = new Properties();
-//        properties.setProperty("hibernate.hbm2ddl.auto", "update");
-        properties.setProperty("hibernate.dialect",hibernateDialect);
-        properties.setProperty("hibernate.show_sql",showSQL);
-        properties.setProperty("use_sql_comments","true");
-        properties.setProperty("hibernate.format_sql",formatSQL);
+        //properties.setProperty("hibernate.hbm2ddl.auto", "update");
+        properties.setProperty("hibernate.dialect", hibernateDialect);
+        properties.setProperty("hibernate.show_sql", showSQL);
+        properties.setProperty("use_sql_comments", "true");
+        properties.setProperty("hibernate.format_sql", formatSQL);
         return properties;
     }
 
-
     @Bean
-    public JmsTemplate jmsTemplate(){
-        JmsTemplate template=new JmsTemplate();
+    public JmsTemplate jmsTemplate() {
+        JmsTemplate template = new JmsTemplate();
         template.setConnectionFactory(activeMQConnectionFactory());
         return template;
     }
@@ -121,34 +116,38 @@ public class Configuration {
             DefaultJmsListenerContainerFactoryConfigurer configurer) {
         DefaultJmsListenerContainerFactory factory =
                 new DefaultJmsListenerContainerFactory();
-        configurer.configure(factory,activeMQConnectionFactory());
+        configurer.configure(factory, activeMQConnectionFactory());
         return factory;
     }
 
-
     @Bean
-    TopicExchange topicExchange(){
-        TopicExchange topicExchange=new TopicExchange("fulfillment");
-        return  topicExchange;
+    TopicExchange orderExchange() {
+        TopicExchange topicExchange = new TopicExchange("fulfillment");
+        return topicExchange;
     }
 
     @Bean
-    Queue queue(){
-        Queue queue=new Queue("ordersQueue",false);
-        return queue;
+    TopicExchange wareHouseExchange() {
+        return new TopicExchange("warehouse");
     }
 
     @Bean
-    Binding binding(Queue queue, TopicExchange exchange){
-        return  BindingBuilder.bind(queue)
+    Binding orderBinding(@Qualifier("ordersQueue") Queue queue, @Qualifier("orderExchange") TopicExchange exchange) {
+        return BindingBuilder.bind(queue)
                 .to(exchange)
                 .with("fulfillment.orders");
     }
 
+    @Bean
+    Binding wareHouseBinding(@Qualifier("fulfillmentQueue") Queue queue, @Qualifier("wareHouseExchange") TopicExchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with("warehouse.fulfillment");
+    }
 
     @Bean
     MessageListenerAdapter listenerAdapter(RabbitMQConsumer receiver) {
-        return new MessageListenerAdapter(receiver,"receiveMessage");
+        return new MessageListenerAdapter(receiver, "receiveMessage");
     }
 
     @Bean
@@ -157,11 +156,21 @@ public class Configuration {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.setQueueNames("ordersQueue");
-     //   container.setMessageListener(listenerAdapter);
+
+        /***
+         *Use this listener adapter if you are not depending on the Default injected RabbitMQ Listener
+         * <code>container.setMessageListener(listenerAdapter);</code>
+         */
         return container;
     }
 
-
+    /**
+     * Template for accessing the RabbitMQ Exchange, sending and receiving messages
+     * Use if not relying on default injected RabbitMQ template
+     *
+     * @param
+     * @return
+     */
 //    @Bean
 //    RabbitTemplate template(ConnectionFactory connectionFactory){
 //        RabbitTemplate rabbitTemplate=new RabbitTemplate();
@@ -170,37 +179,55 @@ public class Configuration {
 //        return rabbitTemplate;
 //    }
 
-
     //EAI (BUS ARCHITECTURE)
     @Bean
-    MessageChannel amqpInputChannel(){
-        return new DirectChannel();
-    }
-
-    @Bean
-    MessageChannel amqpOutputChannel(){
-        return new QueueChannel();
-    }
-
-    @Bean
     public AmqpInboundChannelAdapter inboundChannelAdapter(SimpleMessageListenerContainer listenerContainer,
-                                                           @Qualifier("amqpInputChannel") MessageChannel channel){
-        AmqpInboundChannelAdapter amqpInboundChannelAdapter=new AmqpInboundChannelAdapter(listenerContainer);
+                                                           @Qualifier("amqpInputChannel") MessageChannel channel) {
+        AmqpInboundChannelAdapter amqpInboundChannelAdapter = new AmqpInboundChannelAdapter(listenerContainer);
         amqpInboundChannelAdapter.setOutputChannel(channel);
         return amqpInboundChannelAdapter;
     }
-
 
     /**
      * Channels defined here
      */
     @Bean
-    MessageChannel pickUp(){
+    MessageChannel amqpInputChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean
+    MessageChannel fulfillmentChannel() {
         return new QueueChannel();
     }
 
     @Bean
-    MessageChannel delivery(){
+    MessageChannel pickUp() {
         return new QueueChannel();
+    }
+
+    @Bean
+    MessageChannel delivery() {
+        return new QueueChannel();
+    }
+
+    @Bean
+    MessageChannel orderProcessingChannel() {
+        return new QueueChannel();
+    }
+    
+    /***
+     * Queues defined here
+     */
+    @Bean
+    Queue ordersQueue() {
+        Queue queue = new Queue("ordersQueue", true);
+        return queue;
+    }
+
+    @Bean
+    Queue fulfillmentQueue() {
+        Queue queue = new Queue("fulfillmentQueue", true);
+        return queue;
     }
 }
