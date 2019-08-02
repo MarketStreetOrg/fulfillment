@@ -4,6 +4,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.katale.aop.annotations.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,11 @@ public class Logger {
     @After("log()")
     public void logMethod(JoinPoint point) {
       System.out.println("Logging:"+point.getSignature());
+    }
+
+    @After(value = "@annotation(log)")
+    protected void logAfterExecution(JoinPoint joinPoint, Log log){
+        System.out.println("Logging: "+log.message());
     }
 
 }

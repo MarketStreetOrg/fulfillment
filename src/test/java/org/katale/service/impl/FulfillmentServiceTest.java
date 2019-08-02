@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.katale.BaseTest;
 import org.katale.domains.Fulfillment;
+import org.katale.exceptions.FulfillmentException;
 import org.katale.service.FulfillmentService;
 import org.katale.utilities.Status;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ public class FulfillmentServiceTest extends BaseTest {
     }
 
     @Test
-    public void save() {
+    public void save() throws FulfillmentException {
         fulfillmentService.save(fulfillment);
     }
 
@@ -69,5 +70,11 @@ public class FulfillmentServiceTest extends BaseTest {
     public void exists() {
         fulfillment.setId(1);
         Assert.assertTrue(fulfillmentService.exists(fulfillment));
+    }
+
+    @Test
+    public void getByOrderid(){
+      //  fulfillment.setOrderId(8374234);
+        Assert.assertNull(fulfillmentService.getByOrder(8374234));
     }
 }

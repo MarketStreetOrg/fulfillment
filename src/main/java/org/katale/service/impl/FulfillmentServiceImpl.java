@@ -1,6 +1,7 @@
 package org.katale.service.impl;
 
 import org.katale.domains.Fulfillment;
+import org.katale.exceptions.FulfillmentException;
 import org.katale.repository.FulfillmentRepo;
 import org.katale.service.FulfillmentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,19 @@ public class FulfillmentServiceImpl implements FulfillmentService {
     @Autowired
     FulfillmentRepo fulfillmentRepo;
 
-    public Fulfillment save(Fulfillment fulfillment) {
-        return fulfillmentRepo.save(fulfillment);
+    public Fulfillment save(Fulfillment fulfillment) throws FulfillmentException {
+
+        try {
+            if (getByOrder(fulfillment.getOrderId()) != null) {
+                throw new FulfillmentException("Fulfillment already exists");
+            } else {
+                return fulfillmentRepo.save(fulfillment);
+            }
+        } catch (Exception ex) {
+
+        } finally {
+            return fulfillment;
+        }
     }
 
     public Fulfillment findOne(long id) {
@@ -41,5 +53,7 @@ public class FulfillmentServiceImpl implements FulfillmentService {
     }
 
     @Override
-    public Fulfillment getByOrder(long id) { return fulfillmentRepo.getByOrder(id); }
+    public Fulfillment getByOrder(long id) {
+        return fulfillmentRepo.getByOrder(id);
+    }
 }
