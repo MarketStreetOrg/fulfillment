@@ -8,7 +8,6 @@ import org.springframework.integration.annotation.Poller;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 @Component
@@ -19,14 +18,12 @@ public class OrderTransformer {
 
    // @Validator(params={"[A-Z | a-z]*"})
     @Transformer(inputChannel = "orderProcessingChannel",outputChannel = "fulfillmentChannel",poller = {@Poller})
-    public Fulfillment transformOrder(Object order) throws Throwable{
+    public Fulfillment transformOrder(String order) throws Throwable{
 
         Fulfillment fulfillment=new Fulfillment();
-        fulfillment.setOrderId(Long.parseLong((String) order));
+        fulfillment.setOrderId(Long.parseLong(order));
         fulfillment.setStatus(Status.PENDING);
         fulfillment.setDateFulfilled(new Date());
-
-        System.out.println("Here");
 
         return fulfillment;
     }

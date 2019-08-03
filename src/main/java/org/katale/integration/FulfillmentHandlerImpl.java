@@ -30,7 +30,7 @@ public class FulfillmentHandlerImpl implements FulfillmentHandler {
     public void sendToWareHouse(Fulfillment fulfillment) {
         Fulfillment savedFulfillment = fulfillmentService.getByOrder(fulfillment.getOrderId());
         if (savedFulfillment != null) {
-            template.convertAndSend("warehouse", "warehouse.fulfillment", savedFulfillment.getId());
+            template.convertAndSend("warehouse", "warehouse.fulfillment", String.valueOf(savedFulfillment.getId()));
         }
     }
 }

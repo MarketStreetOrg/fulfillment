@@ -221,13 +221,13 @@ public class Configuration {
      */
     @Bean
     Queue ordersQueue() {
-        Queue queue = new Queue("ordersQueue", true);
+        Queue queue = new Queue("ordersQueue", false);
         return queue;
     }
 
     @Bean
     Queue fulfillmentQueue() {
-        Queue queue = new Queue("fulfillmentQueue", true);
+        Queue queue = new Queue("fulfillmentQueue", false);
         return queue;
     }
 }
